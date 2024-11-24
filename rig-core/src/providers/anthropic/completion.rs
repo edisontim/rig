@@ -183,6 +183,14 @@ impl completion::CompletionModel for CompletionModel {
             ));
         }
 
+        tracing::info!(
+            "preamble: {}",
+            completion_request
+                .preamble
+                .clone()
+                .unwrap_or("".to_string())
+        );
+        tracing::info!("Prompt with context: {}", prompt_with_context);
         let mut request = json!({
             "model": self.model,
             "messages": completion_request
