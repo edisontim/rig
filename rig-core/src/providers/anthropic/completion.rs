@@ -31,7 +31,7 @@ pub const ANTHROPIC_VERSION_2023_01_01: &str = "2023-01-01";
 pub const ANTHROPIC_VERSION_2023_06_01: &str = "2023-06-01";
 pub const ANTHROPIC_VERSION_LATEST: &str = ANTHROPIC_VERSION_2023_06_01;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CompletionResponse {
     pub content: Vec<Content>,
     pub id: String,
@@ -102,21 +102,29 @@ impl TryFrom<CompletionResponse> for completion::CompletionResponse<CompletionRe
     type Error = CompletionError;
 
     fn try_from(response: CompletionResponse) -> std::prelude::v1::Result<Self, Self::Error> {
-        match response.content.as_slice() {
-            [Content::String(text) | Content::Text { text, .. }, ..] => {
-                Ok(completion::CompletionResponse {
+        for content in &response.content {
+            if let Content::ToolUse { name, input, .. } = content {
+                return Ok(completion::CompletionResponse {
+                    choice: completion::ModelChoice::ToolCall(name.clone(), input.clone()),
+                    raw_response: response,
+                });
+            }
+        }
+
+        // If no tool use, look for a text message
+        for content in &response.content {
+            if let Content::String(text) | Content::Text { text, .. } = content {
+                return Ok(completion::CompletionResponse {
                     choice: completion::ModelChoice::Message(text.to_string()),
                     raw_response: response,
-                })
+                });
             }
-            [Content::ToolUse { name, input, .. }, ..] => Ok(completion::CompletionResponse {
-                choice: completion::ModelChoice::ToolCall(name.clone(), input.clone()),
-                raw_response: response,
-            }),
-            _ => Err(CompletionError::ResponseError(
-                "Response did not contain a message or tool call".into(),
-            )),
         }
+
+        // If no content matches, return an error
+        Err(CompletionError::ResponseError(
+            "Response did not contain a message or tool call".into(),
+        ))
     }
 }
 
@@ -242,11 +250,14 @@ impl completion::CompletionModel for CompletionModel {
         if response.status().is_success() {
             match response.json::<ApiResponse<CompletionResponse>>().await? {
                 ApiResponse::Message(completion) => {
-                    tracing::info!(target: "rig",
-                        "Anthropic completion token usage: {}",
-                        completion.usage
+                    let completion =
+                        completion::CompletionResponse::<CompletionResponse>::try_from(completion)?;
+                    tracing::info!(
+                        target: "rig",
+                        "completion: {:?}",
+                        completion.raw_response
                     );
-                    completion.try_into()
+                    Ok(completion)
                 }
                 ApiResponse::Error(error) => Err(CompletionError::ProviderError(error.message)),
             }
