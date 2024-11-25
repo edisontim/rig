@@ -495,6 +495,7 @@ impl completion::CompletionModel for CompletionModel {
         // Add context documents to chat history
         let prompt_with_context = completion_request.prompt_with_context();
 
+        tracing::info!(target: "rig", "Prompt with context: {}", prompt_with_context);
         // Add context documents to chat history
         full_history.push(completion::Message {
             role: "user".into(),
