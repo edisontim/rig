@@ -28,9 +28,9 @@ glob = "0.3.1"
 lopdf = { version = "0.35.0", optional = true }
 rayon = { version = "1.10.0", optional = true }
 
-mcp-server = { git = "https://github.com/modelcontextprotocol/rust-sdk.git", branch = "main" }
-mcp-core = { git = "https://github.com/modelcontextprotocol/rust-sdk.git", branch = "main" }
-mcp-client = { git = "https://github.com/modelcontextprotocol/rust-sdk.git", branch = "main" }
+mcp-server = { git = "https://github.com/modelcontextprotocol/rust-sdk.git", rev = "042299f2519bf1df45b4a5f691d7f3c85979563e" }
+mcp-core = { git = "https://github.com/modelcontextprotocol/rust-sdk.git", rev = "042299f2519bf1df45b4a5f691d7f3c85979563e" }
+mcp-client = { git = "https://github.com/modelcontextprotocol/rust-sdk.git", rev = "042299f2519bf1df45b4a5f691d7f3c85979563e" }
 tower-service = "0.3.3"
 
 
